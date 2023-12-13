@@ -1,0 +1,82 @@
+ENVIRONMENT DETAILS
+k8s 1.26.0 kubelet=1.26.0-00 kubeadm=1.26.0-00 kubectl=1.26.0-00 containerd calico=3.26.0
+
+
+[COMMON ON BOTH MASTER AND WORKER]
+sudo apt-get update
+sudo apt-get upgrade
+sudo hostnamectl set-hostname k8s-master
+
+sudo vi /etc/hosts (enter the internal IP of you worker nodes and master node)
+
+eg
+X.X.X.X hostname
+
+sudo su
+
+sudo cat <<EOF | tee /etc/modules-load.d/containerd.conf
+overlay
+br_netfilter
+EOF
+
+modprobe overlay
+modprobe br_netfilter
+
+cat <<EOF | sudo tee /etc/sysctl.d/99-kubernetes-cri.conf
+net.bridge.bridge-nf-call-iptables=1
+net.ipv4.ip_forward=1
+net.bridge.bridge-nf-call-ip6tables=1
+EOF
+
+exit 
+exit 
+log back in again to see the hostname changed
+
+sudo apt-get update
+sudo apt-get install curl
+sudo apt-get install ca-certificates
+sudo apt-get install gnupg
+
+sudo install -m 0755 -d etc/apt/keyrings
+
+sudo mkdir -p /etc/apt/keyrings
+
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt-get update && sudo apt-get install -y containerd.io
+sudo mkdir -p /etc/containerd
+sudo containerd config default | sudo tee /etc/containerd/config.toml
+sudo swapoff -a
+sudo systemctl restart containerd
+
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+sudo tee <<EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+deb https://apt.kubernetes.io/ kubernetes-xenial main
+EOF
+
+sudo apt-get update
+
+sudo apt install -y kubelet=1.26.0-00 kubeadm=1.26.0-00 kubectl=1.26.0-00
+
+sudo apt-mark hold kubectl kubeadm kubelet
+
+sudo sysctl --system
+
+(Only on master node)
+sudo kubeadm init --pod-network-cidr 192.168.0.0/16 --kubernetes-version 1.26.0
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.26.0/manifests/calico.yaml
+Now get the token and execute the below output to your worker node as sudo
+kubeadm token create --print-join-command
+
+ON MASTER
+kubectl get nodes

@@ -1,0 +1,17 @@
+# nginx-ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-ingress
+spec:
+  rules:
+  - host: gcp-aadi-cluster.lite.arubadev.cloud.hpe.com  # Replace with your internal IP/DNS
+    http:
+      paths:
+      - path: /nginx
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-nodeport-service
+            port:
+              number: 80

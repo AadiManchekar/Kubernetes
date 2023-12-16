@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-monitoring-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-monitoring
+  template:
+    metadata:
+      labels:
+        app: nginx-monitoring
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+      - name: monitoring-sidecar
+        image: prom/prometheus
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+      volumes:
+          - name: nginx-config
+            configMap:
+              name: nginx-config
+              items:
+              - key: nginx.conf
+                path: nginx.conf
+          - name: prometheus-config
+            configMap:
+              name: prometheus-config
+              items:
+              - key: prometheus.yml
+                path: prometheus.yml  

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      initContainers:
+      - name: initialize-redis
+        image: redis:6.2.6-alpine
+        command: ["/bin/bash", "-c", "redis-cli flushall && echo 'Cache initialized'"]
+      - name: preheat-cache
+        image: busybox:latest
+        command: ["/bin/sh", "-c", "cat /data/data.json | jq -r '.[]' | xargs -I {} redis-cli SET {} {}"]
+        volumeMounts:
+        - name: config-volume
+          mountPath: /data
+      containers:
+      - name: redis-cache
+        image: redis:6.2.6-alpine
+        ports:
+        - containerPort: 6379
+        volumeMounts:
+        - name: config-volume
+          mountPath: /data
+      volumes:
+      - name: config-volume
+        configMap:
+          name: redis-cache-data
+          items:
+          - key: data.json
+            path: data.json

@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-k8s-example
+spec:
+  replicas: 2 
+  selector:
+    matchLabels:
+      app: spring-k8s-example
+  template:
+    metadata:
+      labels:
+        app: spring-k8s-example
+    spec:
+      containers:
+      - name: spring-k8s-example
+        image: aadimanchekar/spring-k8s-example:latest  # Replace with your actual Docker Hub repository URI, change username
+        ports:
+        - containerPort: 8080
+        startupProbe:  
+          httpGet:
+            path: /actuator
+            port: 8080
+          initialDelaySeconds: 15  
+          periodSeconds: 10  
+          failureThreshold: 3  
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /hello
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+      imagePullSecrets:
+      - name: dockerhub-credentials

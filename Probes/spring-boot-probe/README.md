@@ -32,10 +32,15 @@ make sure if u did above step u stop and remove the container
 
 - `echo "username:YOUR_PERSONAL_ACCESS_TOKEN" | base64`
 
-- paste it in secrets.yaml instead of [YOUR_BASE64_ENCODED_CREDENTIALS]
+- echo -n '{"auths":{"https://index.docker.io/v1/":{"auth":"<paste-above-output-here>"}}}' | base64
+
+- paste the same instead of <YOUR_BASE64_ENCODED_CREDENTIALS> in secrets.yaml
 
 - `docker tag spring-k8s-example:latest <username>/spring-k8s-example:latest`
 
 - `docker push <username>/spring-k8s-example:latest`
 
 - apply secrets, service, deployment
+
+
+## Check image-pull-secrets.yaml it just doesnt work
